@@ -1,6 +1,8 @@
 import Text.ParserCombinators.Parsec hiding (spaces)
 import System.Environment
 import Control.Monad
+import Numeric
+import Data.Char
 
 symbol :: Parser Char
 symbol = oneOf "!#$%&|*+-/:<=>?@^_~"
@@ -33,7 +35,6 @@ escapedChars :: Parser Char
 escapedChars = do
     char '\\'
     c <- oneOf("\"nrt\\")
---    c <- oneOf ['\\','"','n','r','t']
     return $ case c of
         '\\' -> c
         '"' -> c
@@ -52,11 +53,36 @@ parseAtom = do
         _    -> Atom atom
 
 parseNumber :: Parser LispVal
--- parseNumber = liftM (Number . read) $ many1 digit
--- parseNumber = do
---     num <- many1 digit
---     return $ Number . read $ num
-parseNumber = (many1 digit) >>= (\x -> return ((Number . read) x))
+parseNumber = parsePlainNumber <|> parseRadixNumber
+
+parsePlainNumber :: Parser LispVal
+parsePlainNumber = many1 digit >>= return . Number . read
+
+parseRadixNumber :: Parser LispVal
+parseRadixNumber = char '#' >>
+                    ((char 'd' >> parsePlainNumber)
+                     <|> (char 'b' >> parseBinary)
+                     <|> (char 'o' >> parseOctal)
+                     <|> (char 'x' >> parseHex))
+
+parseBinary = parseNumberInBase "01" 2
+parseOctal = parseNumberInBase "01234567" 8
+parseHex = parseNumberInBase "0123456789abcdefABCDEF" 16
+
+--parseNumberInBase :: String -> Integer -> Parser LispVal
+--parseNumberInBase digits base = do
+--    d <- many . oneOf (digits)
+--    return $ Number . toDecimal base d
+
+parseNumberInBase :: String -> Integer -> Parser LispVal
+parseNumberInBase digits base = do
+    d <- many (oneOf (digits))
+    return $ Number $ toDecimal base d
+--parseNumberInBase digits base = many (oneOf (digits)) >>= return . Number . toDecimal base 
+
+toDecimal :: Integer -> String -> Integer
+toDecimal base s = foldl1 ((+) . (* base)) $ map toNumber s
+                    where toNumber = (toInteger . digitToInt)
 
 parseExpr :: Parser LispVal
 parseExpr = parseAtom
