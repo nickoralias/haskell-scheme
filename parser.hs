@@ -69,16 +69,10 @@ parseBinary = parseNumberInBase "01" 2
 parseOctal = parseNumberInBase "01234567" 8
 parseHex = parseNumberInBase "0123456789abcdefABCDEF" 16
 
---parseNumberInBase :: String -> Integer -> Parser LispVal
---parseNumberInBase digits base = do
---    d <- many . oneOf (digits)
---    return $ Number . toDecimal base d
-
 parseNumberInBase :: String -> Integer -> Parser LispVal
 parseNumberInBase digits base = do
     d <- many (oneOf (digits))
     return $ Number $ toDecimal base d
---parseNumberInBase digits base = many (oneOf (digits)) >>= return . Number . toDecimal base 
 
 toDecimal :: Integer -> String -> Integer
 toDecimal base s = foldl1 ((+) . (* base)) $ map toNumber s
