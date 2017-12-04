@@ -4,6 +4,15 @@ import Control.Monad
 import Numeric
 import Data.Char
 
+parseChar :: Parser LispVal
+parseChar = do
+    string "#\\"
+    s <- many1 letter
+    return $ case s of
+        "space" -> Character ' '
+        "newline" -> Character '\n'
+        [c] -> Character c
+
 symbol :: Parser Char
 symbol = oneOf "!#$%&|*+-/:<=>?@^_~"
 
@@ -23,6 +32,7 @@ data LispVal = Atom String
     | Number Integer
     | String String
     | Bool Bool
+    | Character Char
 
 parseString :: Parser LispVal
 parseString = do
