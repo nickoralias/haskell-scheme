@@ -4,6 +4,13 @@ import Control.Monad
 import Numeric
 import Data.Char
 
+parseFloat :: Parser LispVal
+parseFloat = do
+    whole <- many digit
+    char '.'
+    decimal <- many digit
+    return $ Float (read (whole ++ "." ++ decimal) :: Double)
+
 parseChar :: Parser LispVal
 parseChar = do
     string "#\\"
@@ -33,6 +40,7 @@ data LispVal = Atom String
     | String String
     | Bool Bool
     | Character Char
+    | Float Double
 
 parseString :: Parser LispVal
 parseString = do
