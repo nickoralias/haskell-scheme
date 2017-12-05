@@ -3,6 +3,29 @@ import System.Environment
 import Control.Monad
 import Numeric
 import Data.Char
+import Data.Complex
+import Data.Ratio
+
+parseComplex :: Parser LispVal
+parseComplex = do
+    real <- fmap toDouble $ try parseFloat <|> parsePlainNumber
+    sign <- char '+' <|> char '-'
+    imaginary <- fmap toDouble $ try parseFloat <|> parsePlainNumber
+    let signedImaginary = case sign of
+                            '+' -> imaginary
+                            '-' -> negate imaginary
+    char 'i'
+    return $ Complex (real :+ signedImaginary)
+      where
+        toDouble (Float x) = x
+        toDouble (Number x) = fromInteger x
+
+parseRational :: Parser LispVal
+parseRational = do
+    numerator <- many digit
+    char '/'
+    denominator <- many digit
+    return $ Rational (read (numerator ++ "%" ++ denominator) :: Rational)
 
 parseFloat :: Parser LispVal
 parseFloat = do
@@ -41,6 +64,8 @@ data LispVal = Atom String
     | Bool Bool
     | Character Char
     | Float Double
+    | Rational Rational
+    | Complex (Complex Double)
 
 parseString :: Parser LispVal
 parseString = do
@@ -100,3 +125,7 @@ parseExpr :: Parser LispVal
 parseExpr = parseAtom
     <|> parseString
     <|> parseNumber
+    <|> parseFloat
+    <|> parseComplex
+    <|> parseRational
+    <|> parseChar
