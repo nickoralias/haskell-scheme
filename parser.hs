@@ -6,6 +6,9 @@ import Data.Char
 import Data.Complex
 import Data.Ratio
 
+spaces :: Parser ()
+spaces = skipMany1 space
+
 parseComplex :: Parser LispVal
 parseComplex = do
     real <- fmap toDouble $ try parseFloat <|> parsePlainNumber
@@ -129,3 +132,23 @@ parseExpr = parseAtom
     <|> parseComplex
     <|> parseRational
     <|> parseChar
+    <|> parseQuoted
+    <|> do char '('
+           x <- try parseList <|> parseDottedList
+           char ')'
+           return x
+
+parseList :: Parser LispVal
+parseList = liftM List $ sepBy parseExpr space
+
+parseDottedList :: Parser LispVal
+parseDottedList = do
+    head <- endBy parseExpr spaces
+    tail <- char '.' >> spaces >> parseExpr
+    return $ DottedList head tail
+
+parseQuoted :: Parser LispVal
+parseQuoted = do
+    char '\''
+    x <- parseExpr
+    return $ List [Atom "quote", x]
